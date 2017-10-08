@@ -13,21 +13,21 @@
 #define OUTPUT 0
 using namespace cv;
 using namespace std;
-cv::Mat myPerspective(Mat frame,Point TopLeft, Point TopRight, Point BottomRight, Point BottomLeft); //È­¸é ¿Ö°î½ÃÅ°±â (»ç´Ù¸®²Ã -> Á÷»ç°¢ÇüÀ¸·Î)
-cv::Point CrossPoint(cv::Point x1, Point x2, Point x3, Point x4);// µÎ Á÷¼±°£ÀÇ ¸¸³ª´Â Á¡ ±¸ÇÏ±â
-double angle(int x1, int y1, int x2, int y2);// µÎ Á÷¼±°£ÀÇ °¢µµ ±¸ÇÏ±â
+cv::Mat myPerspective(Mat frame,Point TopLeft, Point TopRight, Point BottomRight, Point BottomLeft); //í™”ë©´ ì™œê³¡ì‹œí‚¤ê¸° (ì‚¬ë‹¤ë¦¬ê¼´ -> ì§ì‚¬ê°í˜•ìœ¼ë¡œ)
+cv::Point CrossPoint(cv::Point x1, Point x2, Point x3, Point x4);// ë‘ ì§ì„ ê°„ì˜ ë§Œë‚˜ëŠ” ì  êµ¬í•˜ê¸°
+double angle(int x1, int y1, int x2, int y2);// ë‘ ì§ì„ ê°„ì˜ ê°ë„ êµ¬í•˜ê¸°
 bool CompareAvgHoughlines(Mat result, Mat perspective, std::vector<cv::Vec2f> lines, float CompareX, bool LessTrue);
 void AngleSumThread();
-double AvgHoughlinesAngle(Mat result, std::vector<cv::Vec2f> lines);//°ËÃâµÈ Á÷¼±ÀÇ Æò±Õ °¢µµ (yÃàÀÌ 90µµ·Î º½)
-void DrawHoughlines(Mat result, Mat frame, std::vector<cv::Vec2f> lines);//°ËÃâµÈ Á÷¼± frame¿¡ ±×¸®±â
+double AvgHoughlinesAngle(Mat result, std::vector<cv::Vec2f> lines);//ê²€ì¶œëœ ì§ì„ ì˜ í‰ê·  ê°ë„ (yì¶•ì´ 90ë„ë¡œ ë´„)
+void DrawHoughlines(Mat result, Mat frame, std::vector<cv::Vec2f> lines);//ê²€ì¶œëœ ì§ì„  frameì— ê·¸ë¦¬ê¸°
 bool initialize(Mat frame,int rectmoveX, int rectmoveY, int rectsizeX, int rectsizeY,
 				uint persLeftTopX, uint persRightTopX, uint persRightBottomX, uint persLeftBottomX);
-//³»°¡ ¼³Á¤ÇÑ Á÷¼±°ú Â÷¼± ÀÏÄ¡ÇÒ ¶§±îÁö ±â´Ù¸®´Â ÇÔ¼ö
+//ë‚´ê°€ ì„¤ì •í•œ ì§ì„ ê³¼ ì°¨ì„  ì¼ì¹˜í•  ë•Œê¹Œì§€ ê¸°ë‹¤ë¦¬ëŠ” í•¨ìˆ˜
 int hough(Mat frame, int rectmoveX, int rectmoveY, int rectsizeX, int rectsizeY,
 		  uint persLeftTopX, uint persRightTopX, uint persRightBottomX, uint persLeftBottomX, int BeforeValue);
-//°ËÃâµÈ Â÷¼±ÀÇ °¢µµ ¹İÈ¯ ÇÔ¼ö
+//ê²€ì¶œëœ ì°¨ì„ ì˜ ê°ë„ ë°˜í™˜ í•¨ìˆ˜
 int gpio[10] = {128, 129, 130, 46, 14, 41, 25, 0, 26, 27};
-// GPIO ÇÉ Number ¹è¿­
+// GPIO í•€ Number ë°°ì—´
 bool digitalWrite(int pin, int val) {
   FILE * fd;
   char fName[128];
@@ -43,7 +43,9 @@ bool digitalWrite(int pin, int val) {
   }
   fclose(fd);
   return true;
-}bool pinMode(int pin, int dir){
+}
+
+bool pinMode(int pin, int dir){
   FILE * fd;
   char fName[128];
   //Exporting the pin to be used
@@ -65,30 +67,34 @@ bool digitalWrite(int pin, int val) {
   }
   fclose(fd);
   return true;
-}void digitalWriteBinary(int num){
-		//2Áø¼ö·Î °ª output¿¡ º¸³»±â
+}
+
+void digitalWriteBinary(int num){
+		//2ì§„ìˆ˜ë¡œ ê°’ outputì— ë³´ë‚´ê¸°
 	int decimal = num;
 	int binary[8] = { 0, };
 	int position = 0;
 	while (1)
 	{
-		binary[position] = decimal % 2;    // 2·Î ³ª´©¾úÀ» ¶§ ³ª¸ÓÁö¸¦ ¹è¿­¿¡ ÀúÀå
-		decimal = decimal / 2;             // 2·Î ³ª´« ¸òÀ» ÀúÀå
-		position++;    // ÀÚ¸´¼ö º¯°æ
-		if (decimal == 0)    // ¸òÀÌ 0ÀÌ µÇ¸é ¹İº¹À» ³¡³¿
+		binary[position] = decimal % 2;    // 2ë¡œ ë‚˜ëˆ„ì—ˆì„ ë•Œ ë‚˜ë¨¸ì§€ë¥¼ ë°°ì—´ì— ì €ì¥
+		decimal = decimal / 2;             // 2ë¡œ ë‚˜ëˆˆ ëª«ì„ ì €ì¥
+		position++;    // ìë¦¿ìˆ˜ ë³€ê²½
+		if (decimal == 0)    // ëª«ì´ 0ì´ ë˜ë©´ ë°˜ë³µì„ ëëƒ„
 			break;
 	}
 	//for(int i=0;i<5000;i++);
-	// ¹è¿­ÀÇ ¿ä¼Ò¸¦ ¿ª¼øÀ¸·Î DigitalWrite
+	// ë°°ì—´ì˜ ìš”ì†Œë¥¼ ì—­ìˆœìœ¼ë¡œ DigitalWrite
 	for (int i = 7; i >= 0; i--)
 	{
 		digitalWrite(gpio[i], binary[i]);
 	}
-}int main(int argc, char** argv)
-//¾ÆÆ½ ¸ŞÀÎÇÔ¼ö
+}
+
+int main(int argc, char** argv)
+//ì•„í‹± ë©”ì¸í•¨ìˆ˜
 {	VideoCapture vc(0);
 	if (!vc.isOpened()) return 0;
-	VideoWriter mainVideo; //mainÇÔ¼öÀÇ VideoWriter
+	VideoWriter mainVideo; //mainí•¨ìˆ˜ì˜ VideoWriter
 	mainVideo.open("output/main.avi",VideoWriter::fourcc('P','I','M','1'),30,
 		Size(640, 480), true);
 	if(!mainVideo.isOpened())
@@ -101,7 +107,7 @@ bool digitalWrite(int pin, int val) {
 	{
 		pinMode(gpio[i], OUTPUT);
 	}
-	//Binary°ª Àü¼ÛÀ» À§ÇÑ PinMode º¯°æ
+	//Binaryê°’ ì „ì†¡ì„ ìœ„í•œ PinMode ë³€ê²½
 	string myText = "Initializing ";
 	string myText2 = "q,w : LEFTTOP / e,r : RIGHTTOP";
 	string myText3 = "z,x : LEFTBTM / c,v : RIGHTBTM";
@@ -111,14 +117,14 @@ bool digitalWrite(int pin, int val) {
 	int myFontFace = 2;
 	double myFontScale = 0.5;
 	Mat frame;
-		int houghvalue = 0; //¿µ»óÃ³¸® µÉ °ª
-	int beforevalue = 0; //ÀÌ Àü ÇÁ·¹ÀÓÀÇ ¿µ»óÃ³¸® °ª
-	std::queue<int> HoughQueue; //¿µ»óÀ¸·Î º¸´Â °Å¸®´ëºñ ½Ã°£Â÷¿¡ µû¸¥ Queue
+		int houghvalue = 0; //ì˜ìƒì²˜ë¦¬ ë  ê°’
+	int beforevalue = 0; //ì´ ì „ í”„ë ˆì„ì˜ ì˜ìƒì²˜ë¦¬ ê°’
+	std::queue<int> HoughQueue; //ì˜ìƒìœ¼ë¡œ ë³´ëŠ” ê±°ë¦¬ëŒ€ë¹„ ì‹œê°„ì°¨ì— ë”°ë¥¸ Queue
 	int i = 0;
 	while (1) {
-		vc >> frame; //0¹øÀ¥Ä·¿¡¼­ ¹ŞÀº µ¥ÀÌÅÍ¸¦ vc¿¡ ´ëÀÔ
+		vc >> frame; //0ë²ˆì›¹ìº ì—ì„œ ë°›ì€ ë°ì´í„°ë¥¼ vcì— ëŒ€ì…
 		cv::resize(frame,frame,Size(640,480),0,0,1);
-		if (frame.empty()) break; //¹ŞÀº°Å ¾øÀ¸¸é Á¾·á
+		if (frame.empty()) break; //ë°›ì€ê±° ì—†ìœ¼ë©´ ì¢…ë£Œ
 		uint persLTX = 53, persLBX = 10, persRTX = 53, persRBX =10;
 		int rectmoveX =5, rectmoveY = frame.rows*3/20, rectsizeX = frame.cols-10, rectsizeY = frame.rows*6/20;
 		houghvalue = hough(frame, rectmoveX, rectmoveY, rectsizeX, rectsizeY, persLTX, persRTX, persRBX, persLBX, beforevalue);
@@ -137,10 +143,12 @@ bool digitalWrite(int pin, int val) {
 		beforevalue = houghvalue;
 		
 		i++;
-		if (waitKey(1) == 27) break; //ESCÅ° ´­¸®¸é Á¾·á
+		if (waitKey(1) == 27) break; //ESCí‚¤ ëˆŒë¦¬ë©´ ì¢…ë£Œ
 	}
 	return 0;
-}cv::Mat myPerspective(Mat frame,Point TopLeft, Point TopRight, Point BottomRight, Point BottomLeft){ //È­¸é ¿Ö°î½ÃÅ°±â (»ç´Ù¸®²Ã -> Á÷»ç°¢ÇüÀ¸·Î)
+}
+
+cv::Mat myPerspective(Mat frame,Point TopLeft, Point TopRight, Point BottomRight, Point BottomLeft){ //í™”ë©´ ì™œê³¡ì‹œí‚¤ê¸° (ì‚¬ë‹¤ë¦¬ê¼´ -> ì§ì‚¬ê°í˜•ìœ¼ë¡œ)
 	Mat dstframe;
 	std::vector<cv::Point> rect;
 	rect.push_back(TopLeft);
@@ -165,7 +173,9 @@ bool digitalWrite(int pin, int val) {
 	Mat transformMatrix = getPerspectiveTransform(src, dst);
 	warpPerspective(frame, dstframe, transformMatrix, Size(maxWidth, maxHeight));
 	return dstframe;
-}cv::Point CrossPoint(cv::Point x1, Point x2, Point x3, Point x4){// µÎ Á÷¼±°£ÀÇ ¸¸³ª´Â Á¡ ±¸ÇÏ±â
+}
+
+cv::Point CrossPoint(cv::Point x1, Point x2, Point x3, Point x4){// ë‘ ì§ì„ ê°„ì˜ ë§Œë‚˜ëŠ” ì  êµ¬í•˜ê¸°
 	float fincrease1, fconstant1, fsamevalue1;
 	float fincrease2, fconstant2, fsamevalue2;
 	if (x1.x == x2.x)
@@ -191,8 +201,11 @@ bool digitalWrite(int pin, int val) {
 		Result.y = fincrease1 * Result.x + fconstant1;
 	}
 	return Result;
-}double angle(int x1, int y1, int x2, int y2)// µÎ Á÷¼±°£ÀÇ °¢µµ ±¸ÇÏ±â
-{	double dx, dy, da;
+}
+
+double angle(int x1, int y1, int x2, int y2)// ë‘ ì§ì„ ê°„ì˜ ê°ë„ êµ¬í•˜ê¸°
+{	
+	double dx, dy, da;
 	dx = x2 - x1;
 	dy = y2 - y1;
 	if (!dx) dx = 1e-6;
@@ -200,8 +213,10 @@ bool digitalWrite(int pin, int val) {
 	if (dx<0) da += PI;
 	da = da * 180 / PI;
 	return da;
-}bool CompareAvgHoughlines(Mat result, Mat perspective, std::vector<cv::Vec2f> lines, int CompareX, bool LessTrue){
-	//initialize ÇÔ¼ö¿¡¼­ Á÷¼±ÀÌ ³»°¡ ¼³Á¤ÇÑ Á÷¼±°ú ¸Â´ÂÁö ºñ±³
+}
+
+bool CompareAvgHoughlines(Mat result, Mat perspective, std::vector<cv::Vec2f> lines, int CompareX, bool LessTrue){
+	//initialize í•¨ìˆ˜ì—ì„œ ì§ì„ ì´ ë‚´ê°€ ì„¤ì •í•œ ì§ì„ ê³¼ ë§ëŠ”ì§€ ë¹„êµ
 	std::vector<cv::Vec2f>::const_iterator it = lines.begin();
 	float sumpt1x=0;
 	float sumpt2x=0;
@@ -243,8 +258,10 @@ bool digitalWrite(int pin, int val) {
 	}
 	printf("Didn't Initialize\n");
 	return false;
-}double AvgHoughlinesAngle(Mat result, std::vector<cv::Vec2f> lines){
-	//°ËÃâµÈ Á÷¼±ÀÇ Æò±Õ °¢µµ (yÃàÀÌ 90µµ·Î º½)
+}
+
+double AvgHoughlinesAngle(Mat result, std::vector<cv::Vec2f> lines){
+	//ê²€ì¶œëœ ì§ì„ ì˜ í‰ê·  ê°ë„ (yì¶•ì´ 90ë„ë¡œ ë´„)
 	std::vector<cv::Vec2f>::const_iterator it = lines.begin();
 	int i = 0;
 	double anglesum = 0;
@@ -285,8 +302,8 @@ bool digitalWrite(int pin, int val) {
 
 bool initialize(Mat frame,int rectmoveX, int rectmoveY, int rectsizeX, int rectsizeY,
 				uint persLeftTopX, uint persRightTopX, uint persRightBottomX, uint persLeftBottomX){
-					//³»°¡ ¼³Á¤ÇÑ Á÷¼±°ú Â÷¼± ÀÏÄ¡ÇÒ ¶§±îÁö ±â´Ù¸®´Â ÇÔ¼ö
-					//Áö±İÀº »ç¿ë X
+					//ë‚´ê°€ ì„¤ì •í•œ ì§ì„ ê³¼ ì°¨ì„  ì¼ì¹˜í•  ë•Œê¹Œì§€ ê¸°ë‹¤ë¦¬ëŠ” í•¨ìˆ˜
+					//ì§€ê¸ˆì€ ì‚¬ìš© X
 					cv::Mat contours;
 					cv::Mat perspective;
 					Rect rect(rectmoveX, rectmoveY, rectsizeX, rectsizeY);
@@ -327,10 +344,12 @@ bool initialize(Mat frame,int rectmoveX, int rectmoveY, int rectsizeX, int rects
 					cv::line(frame1, Point(persLeftBottomX,rectsizeY), Point(rectsizeX-persRightBottomX,rectsizeY), Scalar(0,255,255), 3); //   
 					cv::line(frame1, Point(persLeftTopX,0), Point(rectsizeX-persRightTopX,0), Scalar(0,255,255), 3); //   
 					return false;
-}int hough(Mat frame, int rectmoveX, int rectmoveY, int rectsizeX, int rectsizeY,
+}
+
+int hough(Mat frame, int rectmoveX, int rectmoveY, int rectsizeX, int rectsizeY,
 		  uint persLeftTopX, uint persRightTopX, uint persRightBottomX, uint persLeftBottomX,
 		  int BeforeValue)
-{	//°ËÃâµÈ Â÷¼±ÀÇ °¢µµ ¹İÈ¯ ÇÔ¼ö
+{	//ê²€ì¶œëœ ì°¨ì„ ì˜ ê°ë„ ë°˜í™˜ í•¨ìˆ˜
 	cv::Mat contours;
 	cv::Mat perspective;
 	std::vector<cv::Vec2f> lines;     
