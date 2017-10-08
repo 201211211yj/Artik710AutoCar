@@ -1,0 +1,13 @@
+var actions = msg.actions; // action 타입 msg 변수에 입력
+var action = actions[0].name; // 위의 actions 중 이름 변수에 입력
+if(action == 'AMB_setOn'){
+    msg.payload = "1";
+}else if(action == 'AMB_setOff'){
+    msg.payload = "2";
+}else if(action == 'Police_setOn'){
+    msg.payload = "3";
+}else if(action == 'Police_setOff'){
+    msg.payload = "4";
+}node.log(msg);
+//action 이름에 따른 값 출력
+return msg;
